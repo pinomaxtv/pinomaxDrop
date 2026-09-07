@@ -10,6 +10,31 @@ if (!$file) {
     die("<div style='background:#050608;color:#ff4757;height:100vh;display:flex;align-items:center;justify-content:center;font-family:sans-serif;font-weight:bold;'>⚠️ Error: Hindi mahanap ang file na ito o nabura na ng uploader.</div>");
 }
 
+// 🛡️ CHECK KUNG IKAW ANG UPLOADER O ADMIN
+$current_uid = $_SESSION['pd_user_id'] ?? null;
+$current_email = strtolower($_SESSION['pd_email'] ?? '');
+$is_admin = ($current_uid == 1 || in_array($current_email, ['admin@pinomax.tv', 'roderickalmaras05@gmail.com']));
+$can_edit = ($current_uid && ($current_uid == $file['user_id'] || $is_admin));
+
+// ✏️ PROCESS FORM PAG PININDOT ANG SAVE CHANGES
+$successMsg = false;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_file' && $can_edit) {
+    $new_title = trim($_POST['title']);
+    $new_desc = trim($_POST['description'] ?? '');
+    $new_cat = $_POST['category'];
+    $new_size = trim($_POST['file_size']);
+    $new_url = trim($_POST['download_url']);
+    $new_img = trim($_POST['image_url'] ?? '');
+
+    $upd = $pdo->prepare("UPDATE pd_files SET title = ?, description = ?, category = ?, file_size = ?, download_url = ?, image_url = ? WHERE id = ?");
+    $upd->execute([$new_title, $new_desc, $new_cat, $new_size, $new_url, $new_img, $id]);
+
+    // Refresh file data
+    $stmt->execute([$id]);
+    $file = $stmt->fetch();
+    $successMsg = true;
+}
+
 // 🌐 Dynamic HTTPS Share Link Generator
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')) ? "https://" : "http://";
 $shareLink = $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
@@ -36,19 +61,38 @@ $shareLink = $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
     
     <div class="relative z-10 bg-[#0e1118]/90 border border-[#00e5ff33] p-6 sm:p-8 rounded-3xl shadow-[0_0_40px_rgba(0,229,255,0.1)] w-full max-w-lg backdrop-blur-xl">
       
-      <!-- TOP HEADER -->
-      <div class="flex items-center gap-3 mb-5">
-        <a href="index.php" class="w-9 h-9 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-colors">
-          <i class="fa-solid fa-arrow-left text-sm"></i>
-        </a>
-        <div class="flex-1 overflow-hidden">
-          <h1 class="text-base sm:text-xl font-black text-white tracking-tight leading-snug line-clamp-1"><?= esc($file['title']) ?></h1>
+      <!-- NOTIFICATION KUNG NA-EDIT -->
+      <?php if ($successMsg): ?>
+        <div class="bg-[#2ecc71]/15 border border-[#2ecc71]/30 text-[#2ecc71] p-3 rounded-xl mb-4 text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-check"></i> Matagumpay na na-update ang file details!
         </div>
+      <?php endif; ?>
+
+      <!-- TOP HEADER -->
+      <div class="flex items-center justify-between gap-3 mb-5">
+        <div class="flex items-center gap-3 overflow-hidden">
+          <a href="index.php" class="w-9 h-9 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-colors shrink-0">
+            <i class="fa-solid fa-arrow-left text-sm"></i>
+          </a>
+          <h1 class="text-base sm:text-lg font-black text-white tracking-tight leading-snug line-clamp-1"><?= esc($file['title']) ?></h1>
+        </div>
+
+        <!-- 👑 EDIT BUTTON (LALABAS LANG SA OWNER AT ADMIN) -->
+        <?php if ($can_edit): ?>
+        <button onclick="toggleEditModal(true)" class="bg-[#00e5ff]/10 border border-[#00e5ff33] hover:bg-[#00e5ff] text-[#00e5ff] hover:text-black font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all shrink-0">
+          <i class="fa-solid fa-pen-to-square"></i> <span>Edit</span>
+        </button>
+        <?php endif; ?>
       </div>
       
       <!-- BANNER / PREVIEW BOX -->
-      <div class="w-full h-36 sm:h-44 bg-[#141720] rounded-2xl mb-5 relative overflow-hidden flex items-center justify-center border border-white/5 shadow-inner">
-        <i class="fa-solid fa-box-open text-4xl sm:text-5xl text-gray-700"></i>
+      <div class="w-full h-40 sm:h-48 bg-[#141720] rounded-2xl mb-5 relative overflow-hidden flex items-center justify-center border border-white/5 shadow-inner">
+        <?php if (!empty($file['image_url'])): ?>
+          <img src="<?= esc($file['image_url']) ?>" alt="Cover" class="w-full h-full object-cover">
+        <?php else: ?>
+          <i class="fa-solid fa-box-open text-4xl sm:text-5xl text-gray-700"></i>
+        <?php endif; ?>
+
         <div class="absolute top-3 right-3 bg-[#00e5ff] text-black text-[10px] font-black px-2.5 py-0.5 rounded-lg italic shadow-[0_0_10px_rgba(0,229,255,0.4)]">
           <?= esc($file['category']) ?>
         </div>
@@ -100,7 +144,78 @@ $shareLink = $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
       </a>
     </div>
 
+    <!-- ✏️ EDIT FILE MODAL POPUP (Para sa Owner & Admin) -->
+    <?php if ($can_edit): ?>
+    <div id="editModal" class="fixed inset-0 bg-[#050608]/90 z-[999] hidden items-center justify-center p-4 backdrop-blur-md overflow-y-auto">
+      <div class="bg-[#0e1118] border border-[#00e5ff33] rounded-3xl p-6 w-full max-w-md my-8 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+          <h3 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-pen-to-square text-[#00e5ff]"></i> Edit Asset Information
+          </h3>
+          <button onclick="toggleEditModal(false)" class="text-gray-500 hover:text-white text-base">✕</button>
+        </div>
+
+        <form method="POST" class="space-y-3.5 text-left">
+          <input type="hidden" name="action" value="edit_file">
+          
+          <div>
+            <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Title</label>
+            <input type="text" name="title" value="<?= esc($file['title']) ?>" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:border-[#00e5ff] outline-none" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Category</label>
+              <select name="category" class="w-full bg-[#161a23] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#00e5ff] outline-none">
+                <option <?= $file['category'] === 'Android APKs' ? 'selected' : '' ?>>Android APKs</option>
+                <option <?= $file['category'] === 'Reviewers' ? 'selected' : '' ?>>Reviewers</option>
+                <option <?= $file['category'] === 'Tools & Software' ? 'selected' : '' ?>>Tools & Software</option>
+                <option <?= $file['category'] === 'Configs' ? 'selected' : '' ?>>Configs</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Size</label>
+              <input type="text" name="file_size" value="<?= esc($file['file_size']) ?>" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:border-[#00e5ff] outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Download URL</label>
+            <input type="url" name="download_url" value="<?= esc($file['download_url']) ?>" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:border-[#00e5ff] outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Image Preview URL</label>
+            <input type="url" name="image_url" value="<?= esc($file['image_url'] ?? '') ?>" placeholder="https://..." class="w-full bg-[#161a23] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:border-[#00e5ff] outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Description</label>
+            <textarea name="description" rows="3" class="w-full bg-[#161a23] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:border-[#00e5ff] outline-none resize-none"><?= esc($file['description']) ?></textarea>
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <button type="button" onclick="toggleEditModal(false)" class="w-1/2 py-2.5 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl text-xs font-bold uppercase tracking-wider">Cancel</button>
+            <button type="submit" class="w-1/2 py-2.5 bg-[#00e5ff] hover:bg-[#00c6ff] text-black font-black rounded-xl text-xs uppercase tracking-wider shadow-lg">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <?php endif; ?>
+
     <script>
+        function toggleEditModal(show) {
+            const modal = document.getElementById('editModal');
+            if (!modal) return;
+            if (show) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
         async function copyShareLink() {
             const input = document.getElementById("shareUrl");
             const btnText = document.getElementById("copyText");
