@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['credential'])) {
                 if (text.includes('success')) {
                     window.location.href = 'dashboard.php';
                 } else {
-                    alert("Login failed. Please try again.");
+                    alert(text);
                 }
             } catch (err) {
                 // Fallback: ire-direct pa rin sa dashboard kung nakapasok naman
