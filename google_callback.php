@@ -1,15 +1,15 @@
 <?php
 require 'config.php';
 
-header('Content-Type: application/json');
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Content-Type: application/json');
     die(json_encode(['status' => 'error', 'message' => 'Invalid request']));
 }
 
 $id_token = $_POST['credential'] ?? '';
 
 if (empty($id_token)) {
+    header('Content-Type: application/json');
     die(json_encode(['status' => 'error', 'message' => 'No credential provided']));
 }
 
@@ -26,6 +26,7 @@ curl_close($ch);
 $payload = json_decode($response, true);
 
 if (!isset($payload['sub']) || !isset($payload['email'])) {
+    header('Content-Type: application/json');
     die(json_encode(['status' => 'error', 'message' => 'Failed to verify Google Token']));
 }
 
@@ -34,7 +35,7 @@ $email     = strtolower(trim($payload['email']));
 $name      = $payload['name'] ?? 'Google Creator';
 $avatar    = $payload['picture'] ?? 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=00e5ff&color=000';
 
-// 2. TINGNAN KUNG MERON NANG ACCOUNT
+// 2. TINGNAN KUNG MERON NANG ACCOUNT SA DATABASE
 $stmt = $pdo->prepare("SELECT * FROM pd_users WHERE google_id = ? OR email = ? LIMIT 1");
 $stmt->execute([$google_id, $email]);
 $user = $stmt->fetch();
@@ -54,10 +55,24 @@ if ($user) {
 }
 
 // 3. I-SET ANG PHP SESSION
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 $_SESSION['pd_user_id']  = $user_id;
 $_SESSION['pd_username'] = $username;
 $_SESSION['pd_email']    = $email;
 $_SESSION['pd_avatar']   = $avatar;
 
-echo json_encode(['status' => 'success']);
+// KUNG AJAX / FETCH (Kapag galing sa javascript ng desktop)
+if (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'success', 'redirect' => 'dashboard.php']);
+    exit;
+}
+
+// KUNG BROWSER REDIRECT (Galing sa cellphone Google login)
+// Diretso agad sa Dashboard!
+header("Location: dashboard.php");
 exit;
+?>
