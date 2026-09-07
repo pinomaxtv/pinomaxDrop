@@ -254,8 +254,8 @@ if (isset($_GET['view_user'])) {
                         <?php if (count($view_cashouts) > 0): foreach($view_cashouts as $vc): ?>
                         <div class="flex justify-between items-center bg-white/[0.02] p-2.5 rounded-xl text-xs">
                             <div>
-                                <div class="font-bold text-emerald-400 font-mono">₱<?= number_format($vc['amount'], 2) ?> (<?= esc($vc['method']) ?>)</div>
-                                <div class="text-[10px] text-gray-500 font-mono"><?= esc($vc['account_details']) ?></div>
+                                <div class="font-bold text-emerald-400 font-mono">₱<?= number_format($vc['amount'], 2) ?></div>
+<div class="text-[10px] text-amber-400 font-mono font-bold"><?= esc($vc['method']) ?></div>
                             </div>
                             <div class="text-right">
                                 <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded <?= $vc['status'] === 'approved' ? 'bg-green-500/20 text-green-400' : ($vc['status'] === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400') ?>">
@@ -346,8 +346,7 @@ if (isset($_GET['view_user'])) {
                             </td>
                             <td class="p-3 font-mono font-bold text-[#2ecc71] text-sm">₱<?= number_format($c['amount'], 2) ?></td>
                             <td class="p-3 text-gray-300 font-mono">
-                                <span class="font-bold text-white uppercase"><?= esc($c['method']) ?>:</span> 
-                                <span class="bg-white/5 px-2 py-0.5 rounded text-amber-400"><?= esc($c['account_details']) ?></span>
+                                <span class="bg-white/5 px-2 py-1 rounded text-amber-400 font-mono font-bold"><?= esc($c['method']) ?></span>
                             </td>
                             <td class="p-3">
                                 <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase <?= $c['status'] === 'approved' ? 'bg-green-500/20 text-green-400' : ($c['status'] === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400 animate-pulse') ?>">
