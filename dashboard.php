@@ -1,31 +1,50 @@
 <?php
 require 'config.php';
-$user_id = $_SESSION['user_id'] ?? 1; 
+
+// 🛡️ AUTH CHECK: Dapat naka-login bago makapasok sa dashboard
+if (!isset($_SESSION['pd_user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$user_id = $_SESSION['pd_user_id']; 
 
 $stmt = $pdo->prepare("SELECT * FROM pd_users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch();
 
+if (!$user) {
+    header("Location: logout.php");
+    exit;
+}
+
+$is_admin = ($user['id'] == 1 || in_array(strtolower($user['email']), ['admin@pinomax.tv', 'roderickalmaras05@gmail.com']));
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'upload') {
-        $title = $_POST['title'];
-        $desc = $_POST['description'];
+        $title = trim($_POST['title']);
+        $desc = trim($_POST['description'] ?? '');
         $cat = $_POST['category'];
-        $size = $_POST['file_size'];
-        $url = $_POST['download_url'];
+        $size = trim($_POST['file_size']);
+        $url = trim($_POST['download_url']);
         
         $insert = $pdo->prepare("INSERT INTO pd_files (user_id, title, description, category, file_size, download_url) VALUES (?, ?, ?, ?, ?, ?)");
         $insert->execute([$user_id, $title, $desc, $cat, $size, $url]);
-        $message = "Asset published successfully!";
+        $message = "Asset published successfully! Ready na i-share ang link!";
     } elseif ($_POST['action'] === 'cashout') {
         $amount = (float)$_POST['amount'];
         $method = $_POST['method'];
-        if ($amount >= 100 && $user['wallet_balance'] >= $amount) {
+        $account_details = trim($_POST['account_details'] ?? '');
+
+        if (empty($account_details)) {
+            $error = "Pakilagay ang iyong GCash Number o PayPal Email Address!";
+        } elseif ($amount >= 100 && $user['wallet_balance'] >= $amount) {
             $pdo->beginTransaction();
             $pdo->prepare("UPDATE pd_users SET wallet_balance = wallet_balance - ? WHERE id = ?")->execute([$amount, $user_id]);
-            $pdo->prepare("INSERT INTO pd_cashouts (user_id, amount, method) VALUES (?, ?, ?)")->execute([$user_id, $amount, $method]);
+            $pdo->prepare("INSERT INTO pd_cashouts (user_id, amount, method, status) VALUES (?, ?, ?, 'pending')")->execute([$user_id, $amount, "$method: $account_details"]);
             $pdo->commit();
-            $message = "Cashout requested successfully!";
+            $message = "Cashout requested successfully! I-veverify ito ng admin bago ipadala.";
+            
             $stmt->execute([$user_id]);
             $user = $stmt->fetch();
         } else {
@@ -39,23 +58,26 @@ $filesStmt->execute([$user_id]);
 $myFiles = $filesStmt->fetchAll();
 ?>
 <!doctype html>
-<html style="height: 100%; margin: 0;">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Creator Dashboard - PinoDrop</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-      body { margin: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+      * { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+      body { margin: 0; min-height: 100vh; background: #050608; }
     </style>
   </head>
-  <body class="bg-[#050608] text-[#e0e0e0] font-sans flex overflow-hidden selection:bg-[#00e5ff] selection:text-black">
+  <body class="text-[#e0e0e0] flex flex-col md:flex-row pb-20 md:pb-0 overflow-x-hidden">
     
-    <!-- Sidebar -->
-    <aside class="w-64 bg-[#0a0c10] border-r border-[#00e5ff33] flex flex-col p-6 shadow-[4px_0_24px_rgba(0,229,255,0.05)] z-20 shrink-0">
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="hidden md:flex w-64 bg-[#0a0c10] border-r border-[#00e5ff33] flex-col p-6 shadow-xl z-20 shrink-0 min-h-screen">
       <div class="mb-10 flex items-center gap-3">
         <div class="w-10 h-10 bg-[#00e5ff] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.4)]">
-          <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
+          <i class="fa-solid fa-cloud-arrow-down text-black text-lg"></i>
         </div>
         <span class="text-xl font-bold tracking-tighter text-white uppercase">Pino<span class="text-[#00e5ff]">Drop</span></span>
       </div>
@@ -64,129 +86,167 @@ $myFiles = $filesStmt->fetchAll();
         <a href="index.php" class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-white transition-colors">
           <span class="text-sm font-medium">Asset Market</span>
         </a>
-        <a href="dashboard.php" class="flex items-center gap-3 px-4 py-3 bg-[#00e5ff11] border-l-2 border-[#00e5ff] text-white rounded-r-md transition-colors">
+        <a href="dashboard.php" class="flex items-center gap-3 px-4 py-3 bg-[#00e5ff11] border-l-2 border-[#00e5ff] text-white rounded-r-md">
           <span class="text-sm font-medium">Creator Dashboard</span>
         </a>
+        <?php if ($is_admin): ?>
+        <a href="admin.php" class="flex items-center gap-3 px-4 py-3 bg-red-500/10 border-l-2 border-red-500 text-red-400 rounded-r-md mt-6">
+          <span class="text-sm font-black uppercase tracking-wider">👑 Admin Panel</span>
+        </a>
+        <?php endif; ?>
       </nav>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-[#00e5ff0a] rounded-full blur-[120px] -z-10 pointer-events-none"></div>
-
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col min-h-screen">
       <!-- Header -->
-      <header class="h-20 border-b border-[#ffffff0a] px-8 flex items-center justify-between backdrop-blur-md z-10 shrink-0">
-        <div class="relative w-96"></div>
-        <div class="flex items-center gap-6">
-          <div class="flex flex-col items-end">
-            <span class="text-xs text-gray-500 uppercase font-semibold">Status</span>
-            <span class="text-[10px] flex items-center gap-1.5 text-[#2ecc71]"><span class="w-1.5 h-1.5 bg-[#2ecc71] rounded-full animate-pulse"></span> Secure Node</span>
+      <header class="h-16 md:h-20 border-b border-white/5 px-4 md:px-8 flex items-center justify-between backdrop-blur-md sticky top-0 z-30 bg-[#050608]/90">
+        <div class="flex items-center gap-3 md:hidden">
+            <div class="w-8 h-8 bg-[#00e5ff] rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-cloud-arrow-down text-black text-sm"></i>
+            </div>
+            <span class="text-lg font-black tracking-tighter text-white">PINO<span class="text-[#00e5ff]">DROP</span></span>
+        </div>
+
+        <div class="hidden sm:block">
+            <span class="text-xs text-gray-500">Creator Account:</span>
+            <span class="text-xs font-bold text-white ml-1"><?= esc($user['username']) ?></span>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 bg-[#111318] border border-white/10 py-1.5 px-3 rounded-full">
+            <img src="<?= esc($user['avatar'] ?? 'https://ui-avatars.com/api/?name=User') ?>" class="w-6 h-6 rounded-full object-cover">
+            <span class="text-xs font-bold text-white"><?= esc($user['username']) ?></span>
+            <a href="logout.php" title="Logout" class="text-red-400 hover:text-red-300 text-xs ml-2"><i class="fa-solid fa-power-off"></i></a>
           </div>
         </div>
       </header>
 
-      <section class="p-8 flex-1 overflow-y-auto">
-        <div class="flex items-center justify-between mb-8">
-          <h2 class="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
-            <span class="w-2 h-8 bg-[#00e5ff] rounded-full"></span>
+      <section class="p-4 sm:p-8 flex-1">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl sm:text-2xl font-black text-white flex items-center gap-3">
+            <span class="w-1.5 h-6 bg-[#00e5ff] rounded-full"></span>
             Creator Hub
           </h2>
         </div>
         
-        <?php if(isset($message)): ?><div class="bg-[#2ecc71]/10 border border-[#2ecc71]/30 text-[#2ecc71] p-3 rounded-lg mb-6 text-sm"><?= $message ?></div><?php endif; ?>
-        <?php if(isset($error)): ?><div class="bg-red-500/10 border border-red-500/30 text-red-500 p-3 rounded-lg mb-6 text-sm"><?= $error ?></div><?php endif; ?>
+        <?php if(isset($message)): ?><div class="bg-[#2ecc71]/10 border border-[#2ecc71]/30 text-[#2ecc71] p-3.5 rounded-xl mb-6 text-xs font-bold flex items-center gap-2"><i class="fa-solid fa-check"></i> <?= $message ?></div><?php endif; ?>
+        <?php if(isset($error)): ?><div class="bg-red-500/10 border border-red-500/30 text-red-500 p-3.5 rounded-xl mb-6 text-xs font-bold flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> <?= $error ?></div><?php endif; ?>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Sidebar -->
+          <!-- CASHOUT WALLET BOX -->
           <div class="space-y-6">
-            <div class="bg-[#0f1116] border border-[#ffffff0a] rounded-2xl p-6">
-              <h2 class="text-xs uppercase tracking-widest text-gray-500 font-bold flex items-center gap-2 mb-4">Wallet Balance</h2>
-              <div class="text-4xl font-mono text-[#2ecc71] mb-2 font-light">₱<?= number_format($user['wallet_balance'] ?? 0, 2) ?></div>
-              <p class="text-gray-600 text-[10px] mb-6 uppercase tracking-widest font-bold">Min. Payout ₱100</p>
+            <div class="bg-[#0e1118] border border-white/5 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+              <div class="absolute -right-6 -top-6 w-24 h-24 bg-[#2ecc71]/10 rounded-full blur-xl pointer-events-none"></div>
+
+              <h2 class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2">Available Wallet Balance</h2>
+              <div class="text-3xl sm:text-4xl font-mono text-[#2ecc71] font-black mb-1">₱<?= number_format($user['wallet_balance'] ?? 0, 2) ?></div>
+              <p class="text-gray-500 text-[10px] uppercase tracking-wider font-bold mb-6">Min. Payout ₱100.00</p>
               
-              <hr class="border-[#ffffff0a] mb-6" />
+              <hr class="border-white/5 mb-6" />
               
-              <h3 class="text-xs uppercase tracking-widest text-gray-300 font-bold mb-4">Request Cashout</h3>
+              <h3 class="text-xs uppercase tracking-widest text-gray-300 font-bold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-wallet text-[#00e5ff]"></i> Request Payout
+              </h3>
               <form method="POST" class="space-y-4">
                 <input type="hidden" name="action" value="cashout">
                 <div>
-                  <label class="block text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1.5">Amount (PHP)</label>
-                  <input type="number" name="amount" min="100" max="<?= $user['wallet_balance'] ?>" step="0.01" required class="w-full bg-[#1a1d24] border border-[#ffffff11] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00e5ff] transition-colors" />
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Amount (PHP)</label>
+                  <input type="number" name="amount" min="100" max="<?= $user['wallet_balance'] ?>" step="0.01" required placeholder="₱100.00" class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#00e5ff]" />
                 </div>
                 <div>
-                  <label class="block text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1.5">Method</label>
-                  <select name="method" required class="w-full bg-[#1a1d24] border border-[#ffffff11] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00e5ff] transition-colors appearance-none">
-                    <option value="gcash">GCash</option>
-                    <option value="paypal">PayPal</option>
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Payment Method</label>
+                  <select name="method" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#00e5ff]">
+                    <option value="GCash">GCash</option>
+                    <option value="PayPal">PayPal</option>
                   </select>
                 </div>
-                <button type="submit" class="w-full bg-[#00e5ff11] border border-[#00e5ff33] text-[#00e5ff] hover:bg-[#00e5ff] hover:text-black hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all font-bold py-3 rounded-lg mt-2 text-xs uppercase tracking-widest">
+                <div>
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Account Number / Email</label>
+                  <input type="text" name="account_details" required placeholder="09xxxxxxxxx or paypal@email.com" class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#00e5ff]" />
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-[#0072ff] to-[#00c6ff] text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg transition-transform active:scale-95 mt-2">
                   Withdraw Funds
                 </button>
               </form>
             </div>
           </div>
 
-          <!-- Main Content -->
+          <!-- UPLOAD FORM & ASSETS -->
           <div class="lg:col-span-2 space-y-6">
-            <div class="bg-[#0f1116] border border-[#ffffff0a] rounded-2xl p-6">
-              <h2 class="text-xs uppercase tracking-widest text-gray-500 font-bold flex items-center gap-2 mb-6">Upload New Asset</h2>
-              <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="bg-[#0e1118] border border-white/5 rounded-3xl p-6 shadow-xl">
+              <h2 class="text-xs uppercase tracking-widest text-gray-400 font-bold flex items-center gap-2 mb-6">
+                <i class="fa-solid fa-cloud-arrow-up text-[#2ecc71]"></i> Upload New Asset
+              </h2>
+              <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input type="hidden" name="action" value="upload">
-                <div class="space-y-1.5">
-                  <label class="block text-[10px] uppercase tracking-widest text-gray-500 font-bold">Title</label>
-                  <input type="text" name="title" required class="w-full bg-[#1a1d24] border border-[#ffffff11] rounded-lg px-4 py-2.5 text-sm focus:border-[#00e5ff] outline-none transition-colors" />
+                <div class="space-y-1">
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Asset Title</label>
+                  <input type="text" name="title" placeholder="e.g. GTA V Mobile Mod APK" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
                 </div>
-                <div class="space-y-1.5">
-                  <label class="block text-[10px] uppercase tracking-widest text-gray-500 font-bold">Category</label>
-                  <select name="category" required class="w-full bg-[#1a1d24] border border-[#ffffff11] rounded-lg px-4 py-2.5 text-sm focus:border-[#00e5ff] outline-none transition-colors appearance-none">
+                <div class="space-y-1">
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Category</label>
+                  <select name="category" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none">
                     <option>Android APKs</option>
                     <option>Reviewers</option>
                     <option>Tools & Software</option>
                     <option>Configs</option>
                   </select>
                 </div>
-                <div class="space-y-1.5">
-                  <label class="block text-[10px] uppercase tracking-widest text-gray-500 font-bold">File Size</label>
-                  <input type="text" name="file_size" placeholder="e.g. 15MB" required class="w-full bg-[#1a1d24] border border-[#ffffff11] rounded-lg px-4 py-2.5 text-sm focus:border-[#00e5ff] outline-none transition-colors" />
+                <div class="space-y-1">
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">File Size</label>
+                  <input type="text" name="file_size" placeholder="e.g. 45 MB" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
                 </div>
-                <div class="space-y-1.5">
-                  <label class="block text-[10px] uppercase tracking-widest text-gray-500 font-bold">Download URL</label>
-                  <input type="url" name="download_url" placeholder="Drive / Mediafire Link" required class="w-full bg-[#1a1d24] border border-[#ffffff11] rounded-lg px-4 py-2.5 text-sm focus:border-[#00e5ff] outline-none transition-colors" />
+                <div class="space-y-1">
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Download URL</label>
+                  <input type="url" name="download_url" placeholder="Google Drive, Mediafire, or Mega URL" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
                 </div>
-                <div class="space-y-1.5 md:col-span-2">
-                  <label class="block text-[10px] uppercase tracking-widest text-gray-500 font-bold">Description</label>
-                  <textarea name="description" rows="3" class="w-full bg-[#1a1d24] border border-[#ffffff11] rounded-lg px-4 py-2.5 text-sm focus:border-[#00e5ff] outline-none transition-colors resize-none"></textarea>
+                <div class="space-y-1 md:col-span-2">
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Description (Optional)</label>
+                  <textarea name="description" rows="2" placeholder="Tell downloaders what this file is about..." class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:border-[#00e5ff] outline-none resize-none"></textarea>
                 </div>
                 <div class="md:col-span-2 mt-2">
-                  <button type="submit" class="w-full bg-transparent border border-[#2ecc71] text-[#2ecc71] font-bold py-3.5 rounded-lg hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.4)] transition-all text-xs uppercase tracking-widest">
-                    Publish Asset
+                  <button type="submit" class="w-full bg-gradient-to-r from-[#2ecc71] to-[#00e5ff] text-black font-black py-3.5 rounded-xl shadow-lg hover:opacity-95 text-xs uppercase tracking-wider transition-transform active:scale-98">
+                    Publish Asset &amp; Generate Link 🚀
                   </button>
                 </div>
               </form>
             </div>
 
-            <div class="bg-[#0f1116] border border-[#ffffff0a] rounded-2xl p-6">
-              <h2 class="text-xs uppercase tracking-widest text-gray-500 font-bold flex items-center gap-2 mb-6">My Uploads</h2>
+            <!-- MY UPLOADS TABLE WITH SHAREABLE LINKS -->
+            <div class="bg-[#0e1118] border border-white/5 rounded-3xl p-6 shadow-xl">
+              <h2 class="text-xs uppercase tracking-widest text-gray-400 font-bold flex items-center gap-2 mb-4">
+                <i class="fa-solid fa-list-check text-[#00e5ff]"></i> My Uploaded Assets
+              </h2>
               <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                  <thead>
-                    <tr class="border-b border-[#ffffff0a]">
-                      <th class="pb-3 text-[10px] uppercase tracking-widest text-gray-500 font-bold">Title</th>
-                      <th class="pb-3 text-[10px] uppercase tracking-widest text-gray-500 font-bold">Category</th>
-                      <th class="pb-3 text-[10px] uppercase tracking-widest text-gray-500 font-bold text-right">Downloads</th>
-                      <th class="pb-3 text-[10px] uppercase tracking-widest text-gray-500 font-bold text-right">Earnings</th>
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-white/5 text-gray-400 uppercase font-bold text-[9px] tracking-wider">
+                    <tr>
+                      <th class="p-3">Title</th>
+                      <th class="p-3">Category</th>
+                      <th class="p-3 text-right">Downloads</th>
+                      <th class="p-3 text-right">Earnings</th>
+                      <th class="p-3 text-right">Share Link</th>
                     </tr>
                   </thead>
-                  <tbody class="text-sm">
-                    <?php foreach($myFiles as $f): ?>
-                    <tr class="border-b border-[#ffffff0a] hover:bg-[#1a1d24] transition-colors">
-                      <td class="py-4 font-medium text-white"><?= esc($f['title']) ?></td>
-                      <td class="py-4 text-gray-500"><?= esc($f['category']) ?></td>
-                      <td class="py-4 text-gray-300 font-mono text-right"><?= number_format($f['total_downloads']) ?></td>
-                      <td class="py-4 text-[#2ecc71] font-mono text-right font-medium">₱<?= number_format($f['total_downloads'] * 0.15, 2) ?></td>
+                  <tbody class="divide-y divide-white/5">
+                    <?php if (count($myFiles) > 0): foreach($myFiles as $f): 
+                      $shareUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . dirname($_SERVER['PHP_SELF']) . "/item.php?id=" . $f['id'];
+                    ?>
+                    <tr class="hover:bg-white/[0.02]">
+                      <td class="p-3 font-bold text-white"><?= esc($f['title']) ?></td>
+                      <td class="p-3"><span class="bg-white/5 text-gray-300 px-2 py-0.5 rounded text-[10px]"><?= esc($f['category']) ?></span></td>
+                      <td class="p-3 text-right font-mono text-[#00e5ff] font-bold"><?= number_format($f['total_downloads']) ?></td>
+                      <td class="p-3 text-right font-mono text-[#2ecc71] font-bold">₱<?= number_format($f['total_downloads'] * 0.15, 2) ?></td>
+                      <td class="p-3 text-right">
+                        <button onclick="navigator.clipboard.writeText('<?= $shareUrl ?>'); alert('Link copied to clipboard! Share it now to earn!')" class="bg-[#00e5ff]/10 hover:bg-[#00e5ff] text-[#00e5ff] hover:text-black font-bold px-2.5 py-1 rounded-lg text-[10px] transition-all">
+                          <i class="fa-solid fa-link"></i> Copy
+                        </button>
+                      </td>
                     </tr>
-                    <?php endforeach; ?>
+                    <?php endforeach; else: ?>
+                    <tr><td colspan="5" class="p-4 text-center text-gray-500 text-xs">Wala ka pang na-upload na file. Subukan mong mag-upload sa itaas!</td></tr>
+                    <?php endif; ?>
                   </tbody>
                 </table>
               </div>
@@ -195,5 +255,23 @@ $myFiles = $filesStmt->fetchAll();
         </div>
       </section>
     </main>
+
+    <!-- 📱 MOBILE BOTTOM NAVBAR -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0a0c10]/95 backdrop-blur-lg border-t border-white/10 flex items-center justify-around z-40 px-4">
+        <a href="index.php" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
+            <i class="fa-solid fa-store text-base"></i>
+            <span class="text-[9px] font-bold">Store</span>
+        </a>
+        <a href="dashboard.php" class="flex flex-col items-center gap-1 text-[#00e5ff]">
+            <i class="fa-solid fa-chart-pie text-base"></i>
+            <span class="text-[9px] font-bold">Creator</span>
+        </a>
+        <?php if ($is_admin): ?>
+        <a href="admin.php" class="flex flex-col items-center gap-1 text-red-500">
+            <i class="fa-solid fa-crown text-base"></i>
+            <span class="text-[9px] font-bold">Admin</span>
+        </a>
+        <?php endif; ?>
+    </div>
   </body>
 </html>

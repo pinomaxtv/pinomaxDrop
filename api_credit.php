@@ -6,9 +6,11 @@ require 'config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $file_id = isset($_GET['file_id']) ? (int)$_GET['file_id'] : 0;
-    $downloader_ip = $_SERVER['REMOTE_ADDR'];
+    
+    // 🛡️ Kunin ang totoong Visitor IP kahit dumaan sa Cloudflare Worker
+    $downloader_ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR']);
 
-    // Prevent duplicate crediting in a short timeframe (basic debounce)
+    // Prevent duplicate crediting in a short timeframe (1 hour debounce per IP)
     $stmt = $pdo->prepare("SELECT id FROM pd_downloads_log WHERE file_id = ? AND downloader_ip = ? AND downloaded_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
     $stmt->execute([$file_id, $downloader_ip]);
     if ($stmt->fetch()) {
