@@ -240,7 +240,7 @@ $myFiles = $filesStmt->fetchAll();
                   </thead>
                   <tbody class="divide-y divide-white/5">
                     <?php if (count($myFiles) > 0): foreach($myFiles as $f): 
-                      $shareUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . dirname($_SERVER['PHP_SELF']) . "/item.php?id=" . $f['id'];
+                      $shareUrl = "https://pinodrop.pages.dev/item.php?id=" . $f['id'];
                     ?>
                     <tr class="hover:bg-white/[0.02]">
                       <td class="p-3 font-bold text-white"><?= esc($f['title']) ?></td>
