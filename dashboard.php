@@ -198,14 +198,15 @@ $myFiles = $filesStmt->fetchAll();
                   <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">File Size</label>
                   <input type="text" name="file_size" placeholder="e.g. 45 MB" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
                 </div>
-                <div class="space-y-1">
-                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Download URL</label>
-                  
-                  <!-- BAGONG FIELD: IMAGE / THUMBNAIL URL -->
+                
+                 <!--   / THUMBNAIL URL -->
                 <div class="space-y-1">
                   <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Preview Image URL (Optional)</label>
                   <input type="url" name="image_url" placeholder="https://i.imgur.com/... o Postimages link" class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
                 </div>
+                
+                <div class="space-y-1">
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Download URL</label>
                   
                   <input type="url" name="download_url" placeholder="Google Drive, Mediafire, or Mega URL" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
                 </div>
