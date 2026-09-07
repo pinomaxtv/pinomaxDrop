@@ -139,11 +139,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-   <!-- JAVASCRIPT HANDLER PARA SA GOOGLE SIGNUP -->
+   <!-- JAVASCRIPT HANDLER PARA SA GOOGLE LOGIN -->
     <script>
-        async function handleGoogleSignup(response) {
+        async function handleGoogleLogin(response) {
             if (!response.credential) {
-                alert("Google Sign-Up failed. Please try again.");
                 return;
             }
 
@@ -151,19 +150,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             formData.append('credential', response.credential);
 
             try {
-                const res = await fetch('google_callback.php', {
+                // I-save ang login sa background
+                await fetch('google_callback.php', {
                     method: 'POST',
                     body: formData
                 });
                 
-                const text = await res.text();
-
-                if (text.includes('success')) {
-                    window.location.href = 'dashboard.php';
-                } else {
-                    alert("Signup failed. Please try again.");
-                }
+                // REKTA PASOK SA DASHBOARD! Walang cheche-bureche at walang popup!
+                window.location.href = 'dashboard.php';
             } catch (err) {
+                // Pasok pa rin sa dashboard
                 window.location.href = 'dashboard.php';
             }
         }

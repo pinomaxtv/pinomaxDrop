@@ -128,7 +128,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['credential'])) {
     <script>
         async function handleGoogleLogin(response) {
             if (!response.credential) {
-                alert("Google Sign-In failed. Please try again.");
                 return;
             }
 
@@ -136,21 +135,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['credential'])) {
             formData.append('credential', response.credential);
 
             try {
-                const res = await fetch('google_callback.php', {
+                // I-save ang login sa background
+                await fetch('google_callback.php', {
                     method: 'POST',
                     body: formData
                 });
                 
-                const text = await res.text();
-
-                // Kung may 'success' sa response, diretso pasok na sa dashboard!
-                if (text.includes('success')) {
-                    window.location.href = 'dashboard.php';
-                } else {
-                    alert(text);
-                }
+                // REKTA PASOK SA DASHBOARD! Walang cheche-bureche at walang popup!
+                window.location.href = 'dashboard.php';
             } catch (err) {
-                // Fallback: ire-direct pa rin sa dashboard kung nakapasok naman
+                // Pasok pa rin sa dashboard
                 window.location.href = 'dashboard.php';
             }
         }
