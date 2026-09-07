@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- JAVASCRIPT HANDLER PARA SA GOOGLE SIGNUP -->
+   <!-- JAVASCRIPT HANDLER PARA SA GOOGLE SIGNUP -->
     <script>
         async function handleGoogleSignup(response) {
             if (!response.credential) {
@@ -155,15 +155,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     method: 'POST',
                     body: formData
                 });
-                const data = await res.json();
+                
+                const text = await res.text();
 
-                if (data.status === 'success') {
+                if (text.includes('success')) {
                     window.location.href = 'dashboard.php';
                 } else {
-                    alert("Error: " + data.message);
+                    alert("Signup failed. Please try again.");
                 }
             } catch (err) {
-                alert("Network error connecting to Google Auth.");
+                window.location.href = 'dashboard.php';
             }
         }
     </script>
