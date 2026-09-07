@@ -156,6 +156,14 @@ $myFiles = $filesStmt->fetchAll();
                   <input type="number" name="amount" min="100" max="<?= $user['wallet_balance'] ?>" step="0.01" required placeholder="₱100.00" class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#00e5ff]" />
                 </div>
                 <div>
+                
+                <!-- 📘 HOW TO USE & GUIDELINES BUTTON -->
+<div class="mb-4 flex justify-end">
+    <button onclick="openGuideModal()" class="inline-flex items-center gap-2 bg-[#00e5ff]/10 hover:bg-[#00e5ff]/20 text-[#00e5ff] border border-[#00e5ff]/30 px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-[0_0_15px_rgba(0,229,255,0.15)]">
+        <i class="fa-solid fa-circle-question"></i> How to Earn & Rules
+    </button>
+</div>
+                
                   <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Payment Method</label>
                   <select name="method" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#00e5ff]">
                     <option value="GCash">GCash</option>
@@ -282,5 +290,106 @@ $myFiles = $filesStmt->fetchAll();
         </a>
         <?php endif; ?>
     </div>
+    
+    <!-- 📘 HOW TO EARN & TERMS MODAL -->
+<div id="guideModal" class="fixed inset-0 bg-[#050608]/90 z-[9999] hidden items-center justify-center p-4 backdrop-blur-md">
+    <div class="bg-[#0e1118] border border-[#00e5ff]/30 rounded-3xl p-5 sm:p-7 max-w-md w-full shadow-[0_0_50px_rgba(0,229,255,0.15)] relative max-h-[90vh] flex flex-col">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-[#00e5ff]/10 flex items-center justify-center text-[#00e5ff]">
+                    <i class="fa-solid fa-book-open text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-white uppercase tracking-wider">Creator Earning Guide</h3>
+                    <p class="text-[10px] text-gray-500">Mga Patakaran at Gabay sa Kitaan</p>
+                </div>
+            </div>
+            <button onclick="closeGuideModal()" class="text-gray-400 hover:text-white p-1 text-base">✕</button>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="overflow-y-auto space-y-3.5 text-xs text-gray-300 pr-1 text-left leading-relaxed">
+            
+            <!-- Rule 1: ₱0.15 per download -->
+            <div class="bg-white/5 border border-white/5 rounded-2xl p-3.5">
+                <div class="flex items-center gap-2 text-[#00e5ff] font-bold text-xs mb-1">
+                    <i class="fa-solid fa-coins"></i>
+                    <h4>₱0.15 Bawat Valid Download</h4>
+                </div>
+                <p class="text-[11px] text-gray-400">
+                    Kikita ka ng <b>₱0.15</b> sa bawat taong matagumpay na tatapos ng 30 seconds security timer sa in-upload mong asset bago makuha ang direct link.
+                </p>
+            </div>
+
+            <!-- Rule 2: 10-Minute Cooldown & Self-Download -->
+            <div class="bg-white/5 border border-white/5 rounded-2xl p-3.5">
+                <div class="flex items-center gap-2 text-amber-400 font-bold text-xs mb-1">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <h4>10-Minute Cooldown sa Parehong File</h4>
+                </div>
+                <p class="text-[11px] text-gray-400">
+                    Kung ikaw o iisang tao ang magda-download ng parehong file, <b>isang beses lang papasok ang kita</b>. Kailangang maghintay ng <b>10 minutes</b> bago pumasok ulit ang ₱0.15 para maiwasan ang spam.
+                </p>
+            </div>
+
+            <!-- Rule 3: Uninterrupted Downloads -->
+            <div class="bg-white/5 border border-white/5 rounded-2xl p-3.5">
+                <div class="flex items-center gap-2 text-emerald-400 font-bold text-xs mb-1">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <h4>Tuloy-tuloy ang Download</h4>
+                </div>
+                <p class="text-[11px] text-gray-400">
+                    Kahit naka-cooldown ang earnings, <b>tuloy-tuloy pa rin at hindi mahaharang</b> ang download ng file. Libreng ma-a-access ng bisita ang file kahit kailan!
+                </p>
+            </div>
+
+            <!-- Rule 4: Payout Rules -->
+            <div class="bg-white/5 border border-white/5 rounded-2xl p-3.5">
+                <div class="flex items-center gap-2 text-purple-400 font-bold text-xs mb-1">
+                    <i class="fa-solid fa-wallet"></i>
+                    <h4>Minimum Cashout: ₱100.00</h4>
+                </div>
+                <p class="text-[11px] text-gray-400">
+                    Kapag umabot na sa ₱100 ang iyong wallet balance, maaari mo na itong i-withdraw via <b>GCash</b> o <b>PayPal</b>. Pinoproseso ito ng admin sa loob ng 24 oras.
+                </p>
+            </div>
+
+            <!-- Rule 5: Anti-Cheat Policy -->
+            <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-3.5">
+                <div class="flex items-center gap-2 text-red-400 font-bold text-xs mb-1">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <h4>Bawal ang Auto-Clicker & Bots</h4>
+                </div>
+                <p class="text-[11px] text-gray-400">
+                    Mahigpit na ipinagbabawal ang paggamit ng bot scripts o auto-refreshers. Ang mahuhuling nandadaya ay automatic na <b>iba-ban ang account at mavo-void ang balance</b>.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer Button -->
+        <div class="pt-4 border-t border-white/10 mt-3">
+            <button onclick="closeGuideModal()" class="w-full py-2.5 bg-gradient-to-r from-[#00e5ff] to-[#0072ff] hover:opacity-95 text-black font-black rounded-xl text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(0,229,255,0.3)]">
+                Naiintindihan Ko 👍
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- JAVASCRIPT LOGIC -->
+<script>
+    function openGuideModal() {
+        const modal = document.getElementById('guideModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeGuideModal() {
+        const modal = document.getElementById('guideModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+</script>
   </body>
 </html>

@@ -11,38 +11,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // 1. Kunin ang totoong visitor IP mula sa Cloudflare (Safe 45 chars para sa IPv6)
+    $downloader_ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'));
+    $downloader_ip = substr(trim($downloader_ip), 0, 45);
+
     try {
-        // 1. Hanapin kung sino ang uploader ng file
+        // 2. Hanapin kung sino ang uploader ng file
         $stmt = $pdo->prepare("SELECT user_id FROM pd_files WHERE id = ? LIMIT 1");
         $stmt->execute([$file_id]);
         $file = $stmt->fetch();
 
-        if ($file && !empty($file['user_id'])) {
-            $uploader_id = $file['user_id'];
-
-            // 💰 2. DIRETSO DAGDAG AGAD NG ₱0.15 SA WALLET (WALANG HARANG!)
-            $updateWallet = $pdo->prepare("UPDATE pd_users SET wallet_balance = wallet_balance + 0.15 WHERE id = ?");
-            $updateWallet->execute([$uploader_id]);
-
-            // 📝 3. Subukang i-log (kung mag-error man ang log table, HINDI maaapektuhan ang pera)
-            try {
-                $downloader_ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
-                $downloader_ip = substr($downloader_ip, 0, 45);
-                $log = $pdo->prepare("INSERT INTO pd_downloads_log (file_id, downloader_ip) VALUES (?, ?)");
-                $log->execute([$file_id, $downloader_ip]);
-            } catch (Exception $e) {
-                // Safe: Tuloy pa rin ang pera kahit mag-fail ang logs
-            }
-
-            echo json_encode(['status' => 'success', 'credited' => 0.15]);
-            exit;
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'File or Uploader not found']);
+        if (!$file || empty($file['user_id'])) {
+            echo json_encode(['status' => 'error', 'message' => 'File not found']);
             exit;
         }
 
+        $uploader_id = $file['user_id'];
+
+        // 🛡️ 3. STRICT 10-MINUTE IP COOLDOWN
+        // Titignan kung nag-download na ang IP na ito sa file na ito sa nakalipas na 10 minuto
+        $checkLog = $pdo->prepare("SELECT id FROM pd_downloads_log WHERE file_id = ? AND downloader_ip = ? AND downloaded_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE) LIMIT 1");
+        $checkLog->execute([$file_id, $downloader_ip]);
+        
+        if ($checkLog->fetch()) {
+            // Naka-cooldown pa sa kita, pero tuloy pa rin ang file download ng user
+            echo json_encode([
+                'status' => 'cooldown', 
+                'message' => '10-minute cooldown active for this IP. File download proceeds.'
+            ]);
+            exit;
+        }
+
+        // 💰 4. DAGDAGAN ANG WALLET BALANCE NG UPLOADER (+₱0.15)
+        $updateWallet = $pdo->prepare("UPDATE pd_users SET wallet_balance = wallet_balance + 0.15 WHERE id = ?");
+        $updateWallet->execute([$uploader_id]);
+
+        // 📈 5. DAGDAGAN ANG TOTAL DOWNLOAD COUNT NG FILE
+        $updateDownloads = $pdo->prepare("UPDATE pd_files SET total_downloads = total_downloads + 1 WHERE id = ?");
+        $updateDownloads->execute([$file_id]);
+
+        // 📝 6. I-LOG ANG DOWNLOAD RECORD SA DATABASE (Kasama ang timestamp)
+        try {
+            $log = $pdo->prepare("INSERT INTO pd_downloads_log (file_id, downloader_ip, downloaded_at) VALUES (?, ?, NOW())");
+            $log->execute([$file_id, $downloader_ip]);
+        } catch (Exception $e) {
+            // Safe: Tuloy pa rin ang pera kahit mag-error ang logs
+        }
+
+        echo json_encode(['status' => 'success', 'credited' => 0.15]);
+        exit;
+
     } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'message' => 'Server error']);
         exit;
     }
 }
