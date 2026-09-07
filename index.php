@@ -38,17 +38,33 @@ $files = $stmt->fetchAll();
     <main class="flex-1 flex flex-col relative overflow-hidden">
       <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-[#00e5ff0a] rounded-full blur-[120px] -z-10 pointer-events-none"></div>
 
-      <!-- Header -->
+     <!-- Header with Dynamic Auth Buttons -->
       <header class="h-20 border-b border-[#ffffff0a] px-8 flex items-center justify-between backdrop-blur-md z-10 shrink-0">
         <div class="relative w-96">
           <input type="text" id="searchInput" placeholder="Search secure assets..." class="w-full bg-[#111318] border border-[#ffffff11] rounded-full py-2 px-10 text-sm focus:outline-none focus:border-[#00e5ff] placeholder-gray-600 transition-colors"/>
           <svg class="w-4 h-4 absolute left-4 top-2.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
-        <div class="flex items-center gap-6">
-          <div class="flex flex-col items-end">
+
+        <div class="flex items-center gap-4">
+          <div class="hidden sm:flex flex-col items-end">
             <span class="text-xs text-gray-500 uppercase font-semibold">Status</span>
             <span class="text-[10px] flex items-center gap-1.5 text-[#2ecc71]"><span class="w-1.5 h-1.5 bg-[#2ecc71] rounded-full animate-pulse"></span> Secure Node</span>
           </div>
+
+          <?php if (isset($_SESSION['pd_user_id'])): ?>
+            <!-- NAKA-LOGIN: Ipakita ang Avatar at Logout -->
+            <div class="flex items-center gap-3 bg-[#111318] border border-white/10 py-1.5 px-3 rounded-full">
+              <img src="<?= esc($_SESSION['pd_avatar'] ?? 'https://ui-avatars.com/api/?name=User') ?>" class="w-7 h-7 rounded-full object-cover">
+              <span class="text-xs font-bold text-white"><?= esc($_SESSION['pd_username'] ?? 'Creator') ?></span>
+              <a href="logout.php" title="Sign Out" class="text-red-400 hover:text-red-300 text-xs ml-1"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+            </div>
+          <?php else: ?>
+            <!-- HINDI PA NAKA-LOGIN: Ipakita ang Login at Register -->
+            <div class="flex items-center gap-2">
+              <a href="login.php" class="text-xs font-bold text-gray-300 hover:text-white px-3 py-2">Sign In</a>
+              <a href="register.php" class="text-xs font-bold bg-[#00e5ff] hover:bg-[#00c6ff] text-black px-4 py-2 rounded-xl shadow-[0_0_12px_rgba(0,229,255,0.3)] transition-transform active:scale-95">Register</a>
+            </div>
+          <?php endif; ?>
         </div>
       </header>
 
