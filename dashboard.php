@@ -27,9 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $cat = $_POST['category'];
         $size = trim($_POST['file_size']);
         $url = trim($_POST['download_url']);
+        $img_url = trim($_POST['image_url'] ?? ''); // <-- DAGDAG IMAGE URL
         
-        $insert = $pdo->prepare("INSERT INTO pd_files (user_id, title, description, category, file_size, download_url) VALUES (?, ?, ?, ?, ?, ?)");
-        $insert->execute([$user_id, $title, $desc, $cat, $size, $url]);
+        $insert = $pdo->prepare("INSERT INTO pd_files (user_id, title, description, category, file_size, download_url, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $insert->execute([$user_id, $title, $desc, $cat, $size, $url, $img_url]);
         $message = "Asset published successfully! Ready na i-share ang link!";
     } elseif ($_POST['action'] === 'cashout') {
         $amount = (float)$_POST['amount'];
@@ -199,6 +200,13 @@ $myFiles = $filesStmt->fetchAll();
                 </div>
                 <div class="space-y-1">
                   <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Download URL</label>
+                  
+                  <!-- BAGONG FIELD: IMAGE / THUMBNAIL URL -->
+                <div class="space-y-1">
+                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Preview Image URL (Optional)</label>
+                  <input type="url" name="image_url" placeholder="https://i.imgur.com/... o Postimages link" class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
+                </div>
+                  
                   <input type="url" name="download_url" placeholder="Google Drive, Mediafire, or Mega URL" required class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
                 </div>
                 <div class="space-y-1 md:col-span-2">

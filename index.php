@@ -108,7 +108,12 @@ if (isset($_SESSION['pd_user_id'])) {
           <?php foreach($files as $file): ?>
           <div class="bg-[#0f1116] border border-white/5 rounded-2xl p-4 sm:p-5 hover:border-[#00e5ff44] transition-all group flex flex-col cursor-pointer asset-card shadow-lg" data-title="<?= strtolower(esc($file['title'])) ?>" onclick="window.location.href='item.php?id=<?= $file['id'] ?>'">
             <div class="w-full h-28 sm:h-32 bg-[#1a1d24] rounded-xl mb-3 relative overflow-hidden flex items-center justify-center">
-              <span class="text-3xl opacity-20 group-hover:scale-110 transition-transform">📦</span>
+              <?php if (!empty($file['image_url'])): ?>
+                <img src="<?= esc($file['image_url']) ?>" alt="Preview" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <?php else: ?>
+                <span class="text-3xl opacity-20 group-hover:scale-110 transition-transform">📦</span>
+              <?php endif; ?>
+              
               <div class="absolute top-2.5 right-2.5 bg-[#00e5ff] text-black text-[9px] font-black px-2 py-0.5 rounded italic shadow-md">
                 <?= esc($file['category']) ?>
               </div>

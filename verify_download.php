@@ -6,6 +6,13 @@ $file_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $stmt = $pdo->prepare("SELECT f.*, u.username FROM pd_files f JOIN pd_users u ON f.user_id = u.id WHERE f.id = ? LIMIT 1");
 $stmt->execute([$file_id]);
 $file = $stmt->fetch();
+// Dagdag: Kung pinindot ang download, mag +1 sa database
+if (isset($_GET['action']) && $_GET['action'] === 'count') {
+    $updateStmt = $pdo->prepare("UPDATE pd_files SET total_downloads = total_downloads + 1 WHERE id = ?");
+    $updateStmt->execute([$file_id]);
+    echo json_encode(['status' => 'success']);
+    exit;
+}
 
 $title = $file['title'] ?? 'Asset Download';
 $size = $file['file_size'] ?? 'N/A';
@@ -248,8 +255,11 @@ $category = $file['category'] ?? 'Asset';
                     document.getElementById('step2').classList.add('hidden');
                     document.getElementById('step3').classList.remove('hidden');
 
-                    // Automatic commission payout kay Uploader via API
+                    // 1. Automatic commission payout kay Uploader
                     fetch('api_credit.php?file_id=<?= $file_id ?>', { method: 'POST' });
+
+                    // 2. TOTOONG COUNTER: Dagdag +1 sa Download count
+                    fetch('verify_download.php?id=<?= $file_id ?>&action=count');
                 }
             }, 1000);
         }
