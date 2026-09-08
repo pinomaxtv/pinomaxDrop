@@ -332,14 +332,14 @@ $myFiles = $filesStmt->fetchAll();
             <!-- Scrollable Content -->
             <div class="overflow-y-auto space-y-3.5 text-xs text-gray-300 pr-1 text-left leading-relaxed">
                 
-                <!-- Rule 1: ₱0.15 per download -->
+                <!-- Rule 1: ₱0.10 per download -->
                 <div class="bg-white/5 border border-white/5 rounded-2xl p-3.5">
                     <div class="flex items-center gap-2 text-[#00e5ff] font-bold text-xs mb-1">
                         <i class="fa-solid fa-coins"></i>
-                        <h4>₱0.15 Bawat Valid Download</h4>
+                        <h4>₱0.10 Bawat Valid Download</h4>
                     </div>
                     <p class="text-[11px] text-gray-400">
-                        Kikita ka ng <b>₱0.15</b> sa bawat taong matagumpay na tatapos ng 30 seconds security timer sa in-upload mong asset bago makuha ang direct link.
+                        Kikita ka ng <b>₱0.10</b> sa bawat taong matagumpay na tatapos ng 30 seconds security timer sa in-upload mong asset bago makuha ang direct link.
                     </p>
                 </div>
 
@@ -350,7 +350,7 @@ $myFiles = $filesStmt->fetchAll();
                         <h4>10-Minute Cooldown sa Parehong File</h4>
                     </div>
                     <p class="text-[11px] text-gray-400">
-                        Kung ikaw o iisang tao ang magda-download ng parehong file, <b>isang beses lang papasok ang kita</b>. Kailangang maghintay ng <b>10 minutes</b> bago pumasok ulit ang ₱0.15 para maiwasan ang spam.
+                        Kung ikaw o iisang tao ang magda-download ng parehong file, <b>isang beses lang papasok ang kita</b>. Kailangang maghintay ng <b>12 hours</b> bago pumasok ulit ang ₱0.10 para maiwasan ang spam.
                     </p>
                 </div>
 
