@@ -274,7 +274,7 @@ $myFiles = $filesStmt->fetchAll();
                       <td class="p-3 font-bold text-white"><?= esc($f['title']) ?></td>
                       <td class="p-3"><span class="bg-white/5 text-gray-300 px-2 py-0.5 rounded text-[10px]"><?= esc($f['category']) ?></span></td>
                       <td class="p-3 text-right font-mono text-[#00e5ff] font-bold"><?= number_format($f['total_downloads']) ?></td>
-                      <td class="p-3 text-right font-mono text-[#2ecc71] font-bold">₱<?= number_format($f['total_downloads'] * 0.15, 2) ?></td>
+                      <td class="p-3 text-right font-mono text-[#2ecc71] font-bold">₱<?= number_format($f['total_downloads'] * 0.10, 2) ?></td>
                       <td class="p-3 text-right">
                         <button onclick="navigator.clipboard.writeText('<?= $shareUrl ?>'); alert('Link copied to clipboard! Share it now to earn!')" class="bg-[#00e5ff]/10 hover:bg-[#00e5ff] text-[#00e5ff] hover:text-black font-bold px-2.5 py-1 rounded-lg text-[10px] transition-all">
                           <i class="fa-solid fa-link"></i> Copy

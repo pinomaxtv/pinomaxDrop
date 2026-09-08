@@ -28,21 +28,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $uploader_id = $file['user_id'];
 
-        // ⏱️ 3. 10-MINUTE STRICT IP COOLDOWN
-        $checkLog = $pdo->prepare("SELECT id FROM pd_downloads_log WHERE file_id = ? AND downloader_ip = ? AND downloaded_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE) LIMIT 1");
+        // ⏱️ 3. STRICT 12-HOUR IP COOLDOWN
+        $checkLog = $pdo->prepare("SELECT id FROM pd_downloads_log WHERE file_id = ? AND downloader_ip = ? AND downloaded_at > DATE_SUB(NOW(), INTERVAL 12 HOUR) LIMIT 1");
         $checkLog->execute([$file_id, $downloader_ip]);
 
         if ($checkLog->fetch()) {
             echo json_encode([
                 'status' => 'cooldown', 
-                'message' => 'Cooldown active: 10 minutes interval'
+                'message' => 'Cooldown active: 1 credit per 12 hours lang sa parehong IP.'
             ]);
             exit;
         }
 
-        // 💰 4. DAGDAG PERA SA WALLET NG UPLOADER (+₱0.15)
-        $updateWallet = $pdo->prepare("UPDATE pd_users SET wallet_balance = wallet_balance + 0.15 WHERE id = ?");
-        $updateWallet->execute([$uploader_id]);
+       $updateWallet = $pdo->prepare("UPDATE pd_users SET wallet_balance = wallet_balance + 0.10 WHERE id = ?");
 
         // 📈 5. DAGDAG TOTAL DOWNLOADS NG FILE
         $updateDownloads = $pdo->prepare("UPDATE pd_files SET total_downloads = total_downloads + 1 WHERE id = ?");
@@ -56,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Ignore log error para tuloy pa rin ang pera
         }
 
-        echo json_encode(['status' => 'success', 'credited' => 0.15, 'uploader' => $uploader_id]);
+        echo json_encode(['status' => 'success', 'credited' => 0.10, 'uploader' => $uploader_id]);
         exit;
 
     } catch (Exception $e) {

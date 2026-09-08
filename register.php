@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fa-solid fa-user-plus text-black text-xl"></i>
             </div>
             <h1 class="text-2xl font-black text-white tracking-tight">Join as a <span class="text-[#2ecc71]">Creator</span></h1>
-            <p class="text-xs text-gray-500 mt-1">Earn ₱0.15 for every verified download on your assets</p>
+            <p class="text-xs text-gray-500 mt-1">Earn ₱0.10+ for every verified download on your assets</p>
         </div>
 
         <?php if (!empty($error)): ?>
