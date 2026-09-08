@@ -255,15 +255,8 @@ $category = $file['category'] ?? 'Asset';
                     document.getElementById('step2').classList.add('hidden');
                     document.getElementById('step3').classList.remove('hidden');
 
-                    // 1. Automatic commission payout kay Uploader na may Alert
-fetch('api_credit.php?file_id=<?= $file_id ?>', { method: 'POST' })
-    .then(res => res.json())
-    .then(data => {
-        alert("PAYOUT STATUS: " + JSON.stringify(data));
-    })
-    .catch(err => {
-        alert("FETCH ERROR: " + err.message);
-    });
+                    // ✅ TAHIMIK NA CREDITING SA BACKGROUND (Ligtas at Walang Popup Alert):
+fetch('api_credit.php?file_id=<?= $file_id ?>', { method: 'POST' }).catch(() => {});
 
                     // 2. TOTOONG COUNTER: Dagdag +1 sa Download count
                     fetch('verify_download.php?id=<?= $file_id ?>&action=count');
