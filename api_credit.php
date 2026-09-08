@@ -28,41 +28,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $uploader_id = $file['user_id'];
 
-        // 🛡️ 3. STRICT 10-MINUTE IP COOLDOWN
-        // Titignan kung nag-download na ang IP na ito sa file na ito sa nakalipas na 10 minuto
+        // ⏱️ 3. 10-MINUTE STRICT IP COOLDOWN
         $checkLog = $pdo->prepare("SELECT id FROM pd_downloads_log WHERE file_id = ? AND downloader_ip = ? AND downloaded_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE) LIMIT 1");
         $checkLog->execute([$file_id, $downloader_ip]);
-        
+
         if ($checkLog->fetch()) {
-            // Naka-cooldown pa sa kita, pero tuloy pa rin ang file download ng user
             echo json_encode([
                 'status' => 'cooldown', 
-                'message' => '10-minute cooldown active for this IP. File download proceeds.'
+                'message' => 'Cooldown active: 10 minutes interval'
             ]);
             exit;
         }
 
-        // 💰 4. DAGDAGAN ANG WALLET BALANCE NG UPLOADER (+₱0.15)
+        // 💰 4. DAGDAG PERA SA WALLET NG UPLOADER (+₱0.15)
         $updateWallet = $pdo->prepare("UPDATE pd_users SET wallet_balance = wallet_balance + 0.15 WHERE id = ?");
         $updateWallet->execute([$uploader_id]);
 
-        // 📈 5. DAGDAGAN ANG TOTAL DOWNLOAD COUNT NG FILE
+        // 📈 5. DAGDAG TOTAL DOWNLOADS NG FILE
         $updateDownloads = $pdo->prepare("UPDATE pd_files SET total_downloads = total_downloads + 1 WHERE id = ?");
         $updateDownloads->execute([$file_id]);
 
-        // 📝 6. I-LOG ANG DOWNLOAD RECORD SA DATABASE (Kasama ang timestamp)
+        // 📝 6. I-LOG ANG DOWNLOAD RECORD SA BAGONG GAWANG TABLE
         try {
             $log = $pdo->prepare("INSERT INTO pd_downloads_log (file_id, downloader_ip, downloaded_at) VALUES (?, ?, NOW())");
             $log->execute([$file_id, $downloader_ip]);
         } catch (Exception $e) {
-            // Safe: Tuloy pa rin ang pera kahit mag-error ang logs
+            // Ignore log error para tuloy pa rin ang pera
         }
 
-        echo json_encode(['status' => 'success', 'credited' => 0.15]);
+        echo json_encode(['status' => 'success', 'credited' => 0.15, 'uploader' => $uploader_id]);
         exit;
 
     } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => 'Server error']);
+        echo json_encode(['status' => 'error', 'message' => 'Server error: ' . $e->getMessage()]);
         exit;
     }
 }
