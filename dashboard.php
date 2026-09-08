@@ -27,7 +27,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $cat = $_POST['category'];
         $size = trim($_POST['file_size']);
         $url = trim($_POST['download_url']);
-        $img_url = trim($_POST['image_url'] ?? ''); 
+        $img_url = trim($_POST['image_url'] ?? '');
+        // 🎨 KUNG INIWANANG BLANGKO, KUSANG LALAGYAN NG SYSTEM BASE SA CATEGORY:
+        if (empty($img_url)) {
+            switch ($cat) {
+                case 'Android APKs':
+                    $img_url = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80'; // Cyber Gaming
+                    break;
+                case 'Tools & Software':
+                    $img_url = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80'; // Matrix Code
+                    break;
+                case 'Configs':
+                    $img_url = 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=600&q=80'; // Network Server
+                    break;
+                case 'Reviewers':
+                    $img_url = 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&q=80'; // Books / Study
+                    break;
+                default:
+                    $img_url = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=80';
+            }
+        }
         
         $insert = $pdo->prepare("INSERT INTO pd_files (user_id, title, description, category, file_size, download_url, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $insert->execute([$user_id, $title, $desc, $cat, $size, $url, $img_url]);
@@ -206,9 +225,14 @@ $myFiles = $filesStmt->fetchAll();
                 </div>
                 
                 <div class="space-y-1">
-                  <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Preview Image URL (Optional)</label>
-                  <input type="url" name="image_url" placeholder="https://i.imgur.com/... o Postimages link" class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
-                </div>
+  <div class="flex justify-between items-center">
+    <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Preview Image URL</label>
+    <a href="https://postimages.org/" target="_blank" class="text-[9px] text-[#00e5ff] hover:underline font-bold">
+      <i class="fa-solid fa-arrow-up-right-from-square"></i> Upload img here
+    </a>
+  </div>
+  <input type="url" name="image_url" placeholder="https://i.postimg.cc/... (Iwanang blangko para sa auto-banner)" class="w-full bg-[#161a23] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-[#00e5ff] outline-none" />
+</div>
                 
                 <div class="space-y-1">
                   <label class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold">Download URL</label>
