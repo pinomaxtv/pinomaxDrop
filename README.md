@@ -1,5 +1,5 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="[https://ai.google.dev/static/site-assets/images/share-ais-513315318.png](https://i.postimg.cc/D0P9jYGR/Screenshot-2026-09-08-14-28-57-63.jpg)" />
+<img width="1200" height="475" alt="GHBanner" src="https://i.postimg.cc/D0P9jYGR/Screenshot-2026-09-08-14-28-57-63.jpg" />
 </div>
 
 # Run and deploy render tidb
@@ -15,6 +15,6 @@ View your app in Pino
 
 1. Install dependencies:
    `npm install`
-2. Set the` in [.env.local](.env.local) to your Gemini API key
+2. Set the` in [.env.local](.env
 3. Run the app:
    `npm run dev`
