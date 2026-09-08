@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // 🌐 Dynamic HTTPS Share Link Generator
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')) ? "https://" : "http://";
-$shareLink = $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+$shareLink = "https://pinodrop.pages.dev" . $_SERVER['REQUEST_URI'];
 ?>
 <!doctype html>
 <html lang="en">
