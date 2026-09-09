@@ -40,18 +40,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-       $updateWallet = $pdo->prepare("UPDATE pd_users SET wallet_balance = wallet_balance + 0.10 WHERE id = ?");
+        // 💰 4. DAGDAG PERA SA WALLET NG UPLOADER (+₱0.10) -- IBALIK ANG EXECUTE!
+        $updateWallet = $pdo->prepare("UPDATE pd_users SET wallet_balance = wallet_balance + 0.10 WHERE id = ?");
+        $updateWallet->execute([$uploader_id]); // 👈 ETO YUNG NAWALA KANINA!
 
         // 📈 5. DAGDAG TOTAL DOWNLOADS NG FILE
         $updateDownloads = $pdo->prepare("UPDATE pd_files SET total_downloads = total_downloads + 1 WHERE id = ?");
         $updateDownloads->execute([$file_id]);
 
-        // 📝 6. I-LOG ANG DOWNLOAD RECORD SA BAGONG GAWANG TABLE
+        // 📝 6. I-LOG ANG DOWNLOAD RECORD SA DATABASE
         try {
             $log = $pdo->prepare("INSERT INTO pd_downloads_log (file_id, downloader_ip, downloaded_at) VALUES (?, ?, NOW())");
             $log->execute([$file_id, $downloader_ip]);
         } catch (Exception $e) {
-            // Ignore log error para tuloy pa rin ang pera
+            // Safe: Tuloy pa rin ang pera kahit mag-error ang logs
         }
 
         echo json_encode(['status' => 'success', 'credited' => 0.10, 'uploader' => $uploader_id]);
