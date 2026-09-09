@@ -163,50 +163,51 @@ $category = $file['category'] ?? 'Asset';
                 return;
             }
 
-            // Kung napindot na kanina at bumalik galing ad, i-verify agad
-            if (adClicked && !verified) {
-                checkUserReturn(true);
-                return;
-            }
-
             adClicked = true;
             adLeaveTime = Date.now();
-
-            // Gawing berdeng button pagka-click para may manual backup sa mobile
-            const btn = document.getElementById('sponsor-btn');
-            if (btn) {
-                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Nakapunta na ako sa Ad (I-Verify)';
-                btn.className = 'w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-400 hover:opacity-95 text-black font-black rounded-xl uppercase tracking-wider text-xs shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2';
-            }
 
             // 💰 ADSTERRA DIRECT LINK
             window.open("https://entertainenslave.com/si3916b3n?key=7c1c6c7cf527860c2265a0bc006f4878", "_blank");
         }
 
-        // 2. 15-SECOND ANTI-CHEAT (WALANG SABLAY SA MOBILE)
-        function checkUserReturn(isManualClick = false) {
-            if (adClicked && !verified) {
-                let timeAway = Math.floor((Date.now() - adLeaveTime) / 1000);
+        // 2. 15-SECOND STRICT ANTI-CHEAT (SELYADO ANG BUTAS!)
+        function checkUserReturn() {
+            if (!adClicked || verified) return;
 
-                // Huwag mag-trigger kapag wala pang 3s (iwas bug sa paglipat ng tab)
-                if (timeAway < 3 && !isManualClick) return;
+            let timeAway = Math.floor((Date.now() - adLeaveTime) / 1000);
 
-                if (timeAway < 15) {
-                    document.getElementById('warningMsg').innerHTML = `<b>${timeAway} segundo</b> ka pa lang sa ad.<br><br>Kailangan mong manatili roon nang hindi bababa sa <b>15 SECONDS</b> bago bumalik para ma-verify ang iyong download.`;
-                    document.getElementById('customWarningModal').classList.remove('hidden');
-                    document.getElementById('customWarningModal').classList.add('flex');
-                } else {
-                    verified = true;
-                    startCountdown();
+            // Ignore kapag wala pang 2s (flicker sa paglipat ng tab sa cellphone)
+            if (timeAway < 2) return;
+
+            // 🚨 KUNG NANDAYA / BUMALIK NANG WALA PANG 15 SECONDS:
+            if (timeAway < 15) {
+                // I-RESET ANG LAHAT! PARUSA SA MANDARAYA:
+                adClicked = false;
+                adLeaveTime = 0;
+
+                // Ibalik sa kulay asul na Step 1 button
+                const btn = document.getElementById('sponsor-btn');
+                if (btn) {
+                    btn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Step 1: Visit Sponsor Ad';
+                    btn.className = 'w-full py-3.5 bg-gradient-to-r from-[#0072ff] to-[#00c6ff] hover:opacity-95 text-white font-black rounded-xl uppercase tracking-wider text-xs shadow-[0_4px_20px_rgba(0,114,255,0.4)] transition-all active:scale-[0.98] flex items-center justify-center gap-2';
                 }
+
+                // Sampalin ng Warning Popup
+                document.getElementById('warningMsg').innerHTML = `<b>${timeAway} segundo</b> ka pa lang sa ad.<br><br>⚠️ <b>Masyadong mabilis kang bumalik! Na-reset ang verification.</b><br>Paki-click ulit ang sponsor ad at manatili roon nang <b>hindi bababa sa 15 SECONDS</b>.`;
+                document.getElementById('customWarningModal').classList.remove('hidden');
+                document.getElementById('customWarningModal').classList.add('flex');
+            } else {
+                // ✅ MATAGUMPAY AT TAPAT NA 15+ SECONDS SA AD TAB:
+                verified = true;
+                startCountdown();
             }
         }
 
-        // Multiple Mobile Listeners
-        window.addEventListener('focus', () => checkUserReturn(false));
-        window.addEventListener('pageshow', () => checkUserReturn(false));
+        // Automatic Listeners sa pagbalik ng user sa tab
+        window.addEventListener('focus', checkUserReturn);
+        window.addEventListener('pageshow', checkUserReturn);
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') checkUserReturn(false);
+            if (document.visibilityState === 'visible') checkUserReturn();
         });
 
         function closeWarning() {
