@@ -151,9 +151,42 @@ $category = $file['category'] ?? 'Asset';
             }
         }
 
-        let adClicked = false;
-        let adLeaveTime = 0;
-        let verified = false;
+        // 🛡️ PERMANENT STORAGE KEY (Kahit mag-refresh ang browser, hindi mabubura!)
+        const STORAGE_KEY = 'pinodrop_ad_time_<?= $file_id ?>';
+        let countdownStarted = false;
+
+        function checkStoredAdVisit() {
+            if (countdownStarted) return;
+
+            const leaveTime = localStorage.getItem(STORAGE_KEY);
+            if (leaveTime) {
+                const timeAway = Math.floor((Date.now() - parseInt(leaveTime)) / 1000);
+
+                // Kung wala pang 3 segundo, nag-i-switch pa lang ng tab si Android
+                if (timeAway < 3) return;
+
+                if (timeAway >= 15) {
+                    // ✅ PASADO NA SA 15 SECONDS:
+                    countdownStarted = true;
+                    localStorage.removeItem(STORAGE_KEY);
+                    startCountdown();
+                } else {
+                    // 🚨 MASYADONG MABILIS BUMALIK:
+                    localStorage.removeItem(STORAGE_KEY);
+                    document.getElementById('warningMsg').innerHTML = `<b>${timeAway} segundo</b> ka pa lang sa ad.<br><br>⚠️ <b>Masyadong mabilis kang bumalik!</b><br>Paki-click ulit ang sponsor ad at manatili roon nang <b>hindi bababa sa 15 SECONDS</b>.`;
+                    document.getElementById('customWarningModal').classList.remove('hidden');
+                    document.getElementById('customWarningModal').classList.add('flex');
+                }
+            }
+        }
+
+        // Titingin agad kahit mag-auto reload ang cellphone mo pagbalik!
+        window.addEventListener('DOMContentLoaded', checkStoredAdVisit);
+        window.addEventListener('focus', checkStoredAdVisit);
+        window.addEventListener('pageshow', checkStoredAdVisit);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') checkStoredAdVisit();
+        });
 
         async function handleStartAd() {
             const isAllowed = await checkAdBlock();
@@ -163,52 +196,12 @@ $category = $file['category'] ?? 'Asset';
                 return;
             }
 
-            adClicked = true;
-            adLeaveTime = Date.now();
+            // I-SAVE SA PERMANENT STORAGE NG PHONE
+            localStorage.setItem(STORAGE_KEY, Date.now());
 
             // 💰 ADSTERRA DIRECT LINK
             window.open("https://entertainenslave.com/si3916b3n?key=7c1c6c7cf527860c2265a0bc006f4878", "_blank");
         }
-
-        // 2. 15-SECOND STRICT ANTI-CHEAT (SELYADO ANG BUTAS!)
-        function checkUserReturn() {
-            if (!adClicked || verified) return;
-
-            let timeAway = Math.floor((Date.now() - adLeaveTime) / 1000);
-
-            // Ignore kapag wala pang 2s (flicker sa paglipat ng tab sa cellphone)
-            if (timeAway < 2) return;
-
-            // 🚨 KUNG NANDAYA / BUMALIK NANG WALA PANG 15 SECONDS:
-            if (timeAway < 15) {
-                // I-RESET ANG LAHAT! PARUSA SA MANDARAYA:
-                adClicked = false;
-                adLeaveTime = 0;
-
-                // Ibalik sa kulay asul na Step 1 button
-                const btn = document.getElementById('sponsor-btn');
-                if (btn) {
-                    btn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Step 1: Visit Sponsor Ad';
-                    btn.className = 'w-full py-3.5 bg-gradient-to-r from-[#0072ff] to-[#00c6ff] hover:opacity-95 text-white font-black rounded-xl uppercase tracking-wider text-xs shadow-[0_4px_20px_rgba(0,114,255,0.4)] transition-all active:scale-[0.98] flex items-center justify-center gap-2';
-                }
-
-                // Sampalin ng Warning Popup
-                document.getElementById('warningMsg').innerHTML = `<b>${timeAway} segundo</b> ka pa lang sa ad.<br><br>⚠️ <b>Masyadong mabilis kang bumalik! Na-reset ang verification.</b><br>Paki-click ulit ang sponsor ad at manatili roon nang <b>hindi bababa sa 15 SECONDS</b>.`;
-                document.getElementById('customWarningModal').classList.remove('hidden');
-                document.getElementById('customWarningModal').classList.add('flex');
-            } else {
-                // ✅ MATAGUMPAY AT TAPAT NA 15+ SECONDS SA AD TAB:
-                verified = true;
-                startCountdown();
-            }
-        }
-
-        // Automatic Listeners sa pagbalik ng user sa tab
-        window.addEventListener('focus', checkUserReturn);
-        window.addEventListener('pageshow', checkUserReturn);
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') checkUserReturn();
-        });
 
         function closeWarning() {
             document.getElementById('customWarningModal').classList.add('hidden');
