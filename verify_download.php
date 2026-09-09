@@ -163,21 +163,36 @@ $category = $file['category'] ?? 'Asset';
                 return;
             }
 
+            // Kung napindot na kanina at bumalik galing ad, i-verify agad
+            if (adClicked && !verified) {
+                checkUserReturn(true);
+                return;
+            }
+
             adClicked = true;
             adLeaveTime = Date.now();
 
-            // 💰 TOTOONG ADSTERRA DIRECT LINK MO
+            // Gawing berdeng button pagka-click para may manual backup sa mobile
+            const btn = document.getElementById('sponsor-btn');
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Nakapunta na ako sa Ad (I-Verify)';
+                btn.className = 'w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-400 hover:opacity-95 text-black font-black rounded-xl uppercase tracking-wider text-xs shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2';
+            }
+
+            // 💰 ADSTERRA DIRECT LINK
             window.open("https://entertainenslave.com/si3916b3n?key=7c1c6c7cf527860c2265a0bc006f4878", "_blank");
         }
 
-        // 2. 15-SECOND ANTI-CHEAT TIME STAY LISTENER
-        function checkUserReturn() {
+        // 2. 15-SECOND ANTI-CHEAT (WALANG SABLAY SA MOBILE)
+        function checkUserReturn(isManualClick = false) {
             if (adClicked && !verified) {
                 let timeAway = Math.floor((Date.now() - adLeaveTime) / 1000);
 
+                // Huwag mag-trigger kapag wala pang 3s (iwas bug sa paglipat ng tab)
+                if (timeAway < 3 && !isManualClick) return;
+
                 if (timeAway < 15) {
-                    adClicked = false;
-                    document.getElementById('warningMsg').innerHTML = `<b>${timeAway} segundo</b> ka pa lang sa ad.<br><br>Kailangan mong manatili roon nang hindi bababa sa <b>15 SECONDS</b> para ma-verify ang iyong download.`;
+                    document.getElementById('warningMsg').innerHTML = `<b>${timeAway} segundo</b> ka pa lang sa ad.<br><br>Kailangan mong manatili roon nang hindi bababa sa <b>15 SECONDS</b> bago bumalik para ma-verify ang iyong download.`;
                     document.getElementById('customWarningModal').classList.remove('hidden');
                     document.getElementById('customWarningModal').classList.add('flex');
                 } else {
@@ -187,9 +202,11 @@ $category = $file['category'] ?? 'Asset';
             }
         }
 
-        window.addEventListener('focus', checkUserReturn);
+        // Multiple Mobile Listeners
+        window.addEventListener('focus', () => checkUserReturn(false));
+        window.addEventListener('pageshow', () => checkUserReturn(false));
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') checkUserReturn();
+            if (document.visibilityState === 'visible') checkUserReturn(false);
         });
 
         function closeWarning() {
